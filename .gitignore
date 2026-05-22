@@ -1,0 +1,30 @@
+# Environment variables — never commit secrets
+.env
+.env.local
+.env.*.local
+
+# Python virtual environments
+.venv/
+venv/
+env/
+backend/.venv/
+scripts/.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Node modules
+node_modules/
+
+# Build output
+dist/
+build/
+
+# ChromaDB data
+chroma_data/
+chroma.log
+
+# macOS
+.DS_Store

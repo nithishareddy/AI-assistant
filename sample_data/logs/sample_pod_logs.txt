@@ -1,0 +1,25 @@
+2024-01-15T08:00:01Z INFO  Starting application server on port 8080
+2024-01-15T08:00:02Z INFO  Connected to database at postgres:5432
+2024-01-15T08:00:03Z INFO  Loading configuration from ConfigMap
+2024-01-15T08:00:05Z INFO  Application ready. Liveness probe endpoint: /health
+2024-01-15T08:01:00Z INFO  Received 42 requests in last minute
+2024-01-15T08:02:00Z WARN  High memory usage: 85% of 256Mi limit
+2024-01-15T08:02:15Z WARN  GC pause 450ms - heap at 220Mi
+2024-01-15T08:02:30Z ERROR java.lang.OutOfMemoryError: Java heap space
+    at com.example.service.OrderService.processOrders(OrderService.java:245)
+    at com.example.controller.OrderController.getOrders(OrderController.java:78)
+2024-01-15T08:02:31Z ERROR Container will restart (OOMKilled)
+2024-01-15T08:02:31Z FATAL Shutting down - memory exhausted
+--- Pod restart #1 ---
+2024-01-15T08:02:45Z INFO  Starting application server on port 8080
+2024-01-15T08:02:46Z INFO  Connected to database at postgres:5432
+2024-01-15T08:03:00Z WARN  High memory usage: 78% of 256Mi limit
+2024-01-15T08:03:30Z WARN  GC pause 512ms - heap at 230Mi
+2024-01-15T08:03:45Z ERROR java.lang.OutOfMemoryError: Java heap space
+    at com.example.service.OrderService.processOrders(OrderService.java:245)
+2024-01-15T08:03:46Z FATAL OOMKilled - CrashLoopBackOff imminent
+--- Pod restart #2 ---
+2024-01-15T08:04:10Z INFO  Starting application server on port 8080
+2024-01-15T08:04:30Z ERROR Failed to connect to database: connection timeout after 30000ms
+2024-01-15T08:04:30Z ERROR com.example.db.ConnectionPool: No available connections (pool exhausted)
+2024-01-15T08:04:31Z FATAL Application startup failed - cannot proceed without DB
