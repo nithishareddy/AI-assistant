@@ -99,3 +99,12 @@ Load the included sample data to test immediately:
 
 # Then ask: "Why is my pod crashing?"
 ```
+
+
+https://github.com/user-attachments/assets/4e09228f-4a86-4561-a71e-f5c177f27b9a
+
+
+
+
+
+
