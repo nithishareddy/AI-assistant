@@ -114,6 +114,81 @@ async def get_pod_logs(namespace: str, pod_name: str, container: str = "", tail_
         return f"Error fetching logs: {e}"
 
 
+def _find_pod_namespace(v1, pod_name: str) -> str:
+    try:
+        pods = v1.list_pod_for_all_namespaces(field_selector=f"metadata.name={pod_name}")
+        if pods.items:
+            return pods.items[0].metadata.namespace
+    except Exception:
+        pass
+    return ""
+
+
+async def describe_pod_with_logs(pod_name: str, namespace: str = "") -> str:
+    """Return a full diagnostic report: pod status, events, and recent logs."""
+    v1 = _get_core_v1()
+
+    if not namespace:
+        namespace = _find_pod_namespace(v1, pod_name)
+        if not namespace:
+            return f"Pod `{pod_name}` not found in any namespace."
+
+    lines = [f"## Pod Diagnostics: `{pod_name}` (namespace: `{namespace}`)"]
+
+    # Pod phase + per-container state
+    try:
+        pod = v1.read_namespaced_pod(name=pod_name, namespace=namespace)
+        lines.append(f"\n**Phase:** {pod.status.phase or 'Unknown'}")
+
+        for cs in (pod.status.container_statuses or []):
+            lines.append(f"\n### Container: `{cs.name}`")
+            lines.append(f"- Restart count: **{cs.restart_count}**")
+            lines.append(f"- Ready: {cs.ready}")
+            if cs.state.waiting:
+                lines.append(f"- State: Waiting — **{cs.state.waiting.reason}**: {cs.state.waiting.message or ''}")
+            elif cs.state.terminated:
+                t = cs.state.terminated
+                lines.append(f"- State: Terminated — **{t.reason}**, exit code `{t.exit_code}`")
+            elif cs.state.running:
+                lines.append(f"- State: Running since {cs.state.running.started_at}")
+            if cs.last_state.terminated:
+                lt = cs.last_state.terminated
+                lines.append(f"- Last termination: **{lt.reason}**, exit code `{lt.exit_code}`, at {lt.finished_at}")
+    except Exception as e:
+        lines.append(f"\nError reading pod status: {e}")
+
+    # Events
+    try:
+        events = v1.list_namespaced_event(
+            namespace=namespace,
+            field_selector=f"involvedObject.name={pod_name}",
+        )
+        if events.items:
+            lines.append("\n## Events")
+            for ev in sorted(events.items, key=lambda e: e.last_timestamp or "", reverse=True)[:10]:
+                lines.append(f"- `[{ev.type}]` **{ev.reason}**: {ev.message}")
+        else:
+            lines.append("\n## Events\nNo events found.")
+    except Exception as e:
+        lines.append(f"\nError fetching events: {e}")
+
+    # Current logs, fall back to previous container on failure
+    try:
+        logs = v1.read_namespaced_pod_log(name=pod_name, namespace=namespace, tail_lines=60, timestamps=True)
+        if logs:
+            lines.append(f"\n## Recent Logs (last 60 lines)\n```\n{logs.strip()}\n```")
+        else:
+            raise ValueError("empty")
+    except Exception:
+        try:
+            logs = v1.read_namespaced_pod_log(name=pod_name, namespace=namespace, tail_lines=60, timestamps=True, previous=True)
+            lines.append(f"\n## Previous Container Logs (last 60 lines)\n```\n{logs.strip()}\n```")
+        except Exception as e2:
+            lines.append(f"\n## Logs\nCould not retrieve logs: {e2}")
+
+    return "\n".join(lines)
+
+
 async def list_namespaces() -> list[str]:
     try:
         v1 = _get_core_v1()

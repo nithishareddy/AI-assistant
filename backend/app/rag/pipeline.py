@@ -1,4 +1,4 @@
-import re
+import json
 from app.rag.chunker import chunk_document
 from app.rag.embedder import add_chunks, query_similar
 from app.config import get_settings
@@ -22,33 +22,68 @@ When analyzing issues, always provide:
 Format code blocks with the appropriate language tag (yaml, bash, json, etc.).
 Be concise but thorough. If you need more context, ask targeted follow-up questions."""
 
-# Intent patterns → which K8s fetcher to call
-_POD_PATTERNS = re.compile(
-    r"\b(list|show|get|display|give me|what are|fetch|find)\b.{0,30}\b(pods?|containers?)\b"
-    r"|\bactive pods?\b|\brunning pods?\b|\ball pods?\b|\bpod status\b",
-    re.IGNORECASE,
-)
+K8S_TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "list_pods",
+            "description": (
+                "List all pods in the Kubernetes cluster, optionally filtered by namespace. "
+                "Use when the user asks to see pods, check pod status, or find what is running."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "namespace": {
+                        "type": "string",
+                        "description": "Namespace to filter by. Leave empty for all namespaces.",
+                    }
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "diagnose_pod",
+            "description": (
+                "Fetch logs, events, and container status for a specific pod. "
+                "Use when the user mentions a pod name or asks why a pod is crashing, "
+                "failing, restarting, or in CrashLoopBackOff / OOMKilled state."
+            ),
+            "parameters": {
+                "type": "object",
+                "required": ["pod_name"],
+                "properties": {
+                    "pod_name": {
+                        "type": "string",
+                        "description": "Full pod name, e.g. go-hpa-app-74cb644f7-hrj8h",
+                    },
+                    "namespace": {
+                        "type": "string",
+                        "description": "Namespace the pod is in. Leave empty to search all namespaces.",
+                    },
+                },
+            },
+        },
+    },
+]
 
 
-def detect_k8s_intent(query: str) -> str | None:
-    """Return intent key if the query is asking for live K8s data, else None."""
-    if _POD_PATTERNS.search(query):
-        return "list_pods"
-    return None
-
-
-async def fetch_live_k8s_context(intent: str) -> tuple[str, str]:
-    """Fetch live data from the cluster and return (label, formatted_text)."""
-    from app.services.k8s_service import list_all_pods, format_pods_table
-    if intent == "list_pods":
-        try:
-            pods = list_all_pods()
-            table = format_pods_table(pods)
-            label = "Live Kubernetes Pod Status (fetched now from cluster)"
-            return label, table
-        except Exception as e:
-            return "K8s Error", f"Could not reach the cluster: {e}"
-    return "", ""
+async def execute_tool_call(name: str, args: dict) -> str:
+    from app.services.k8s_service import list_all_pods, format_pods_table, describe_pod_with_logs
+    try:
+        if name == "list_pods":
+            pods = list_all_pods(namespace=args.get("namespace", ""))
+            return format_pods_table(pods)
+        if name == "diagnose_pod":
+            return await describe_pod_with_logs(
+                pod_name=args.get("pod_name", ""),
+                namespace=args.get("namespace", ""),
+            )
+        return f"Unknown tool: {name}"
+    except Exception as e:
+        return f"Tool `{name}` failed: {e}"
 
 
 async def ingest_document(content: str, source: str, doc_type: str, metadata: dict) -> int:

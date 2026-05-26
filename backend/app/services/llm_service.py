@@ -24,6 +24,20 @@ async def chat_completion(messages: list[dict]) -> str:
     return response.choices[0].message.content
 
 
+async def chat_completion_with_tools(messages: list[dict], tools: list[dict]):
+    """Non-streaming call that lets the LLM decide which tools to invoke."""
+    settings = get_settings()
+    client = get_client()
+    response = await client.chat.completions.create(
+        model=settings.openai_model,
+        messages=messages,
+        tools=tools,
+        tool_choice="auto",
+        temperature=0.2,
+    )
+    return response.choices[0].message
+
+
 async def chat_completion_stream(messages: list[dict]) -> AsyncIterator[str]:
     settings = get_settings()
     client = get_client()
