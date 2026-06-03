@@ -25,8 +25,6 @@ Knowledge Base (ChromaDB)
 
 ### Local Development
 
-Open **6 terminal tabs** and run each command in order. Wait for each service to be ready before starting the next.
-
 
 **Terminal 1 — ChromaDB**
 ```bash
