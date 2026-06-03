@@ -1,6 +1,6 @@
 # AI-assistant
 
-Imagine troubleshooting Kubernetes failures without running a single kubectl command. Along with handling regular natural language queries, this AI-powered assistant built using RAG (Retrieval-Augmented Generation) helps users diagnose cluster issues through conversational interactions. It can also learn from help center and support documentation to answer product specific questions, while analyzing logs, explaining YAML configurations, identifying root causes, and suggesting fixes automatically .
+Imagine troubleshooting Kubernetes failures without running a single kubectl command. Along with handling regular natural language queries, this AI-powered assistant built using RAG (Retrieval-Augmented Generation) helps users diagnose cluster issues through conversational interactions. It can also learn from support docs to answer product specific questions, while analyzing logs, explaining YAML configurations, identifying root causes, and suggesting fixes automatically .
 ## Architecture
 
 ```
@@ -16,11 +16,9 @@ RAG Pipeline
 OpenAI GPT-4o (with DevOps system prompt)
        ↑
 Knowledge Base (ChromaDB)
-  ├── Help or support center website Docs  ← Kafka pipeline (scraper → kafka → consumer)
+  ├── Support Docs, Logs,yamls ,API specs etc
   └── Kubernetes API   ← live pod logs + resources
 
-Kafka Pipeline
-  scraper.py  →  help-center-docs (topic)  →  kafka_consumer.py  →  ChromaDB
 ```
 
 ## Quick Start
@@ -29,19 +27,14 @@ Kafka Pipeline
 
 Open **6 terminal tabs** and run each command in order. Wait for each service to be ready before starting the next.
 
-**Terminal 1 — Kafka**
-```bash
-brew install kafka      # skip if already installed
-brew services start kafka
-```
 
-**Terminal 2 — ChromaDB**
+**Terminal 1 — ChromaDB**
 ```bash
 cd backend
 .venv/bin/chroma run --path ./chroma_data --host 127.0.0.1 --port 8001
 ```
 
-**Terminal 3 — Backend**
+**Terminal 2 — Backend**
 ```bash
 cd backend
 python -m venv .venv && source .venv/bin/activate
@@ -52,41 +45,14 @@ export CHROMA_HOST=127.0.0.1 CHROMA_PORT=8001
 uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-**Terminal 4 — Frontend**
+**Terminal 3 — Frontend**
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-**Terminal 5 — Kafka Consumer** *(reads Kafka topic → writes to ChromaDB)*
-```bash
-cd scripts
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-CHROMA_HOST=127.0.0.1 CHROMA_PORT=8001 python kafka_consumer.py
-```
-
-**Terminal 6 — Scraper** *(scrapes the help or support center website docs → publishes to Kafka every 5s)*
-```bash
-cd scripts
-source .venv/bin/activate
-python scraper.py
-```
-
 Open http://localhost:5173
-
-> **Start order matters:** Kafka → ChromaDB → Backend → Frontend / Consumer / Scraper
-
-#### Managing the Knowledge Base
-
-```bash
-# List all sources currently in ChromaDB
-GET  http://localhost:8000/ingest/sources
-
-# Remove a specific source
-DELETE http://localhost:8000/ingest/source?source=<source-name>
-```
 
 
 ## Sample Demo
