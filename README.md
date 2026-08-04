@@ -1,6 +1,28 @@
 # AI-assistant
 
 Imagine troubleshooting Kubernetes failures without running a single kubectl command. Along with handling regular natural language queries, this AI-powered assistant built using RAG (Retrieval-Augmented Generation) helps users diagnose cluster issues through conversational interactions. It can also learn from support docs to answer product specific questions, while analyzing logs, explaining YAML configurations, identifying root causes, and suggesting fixes automatically .
+
+## Sample Demo
+
+https://github.com/user-attachments/assets/4e09228f-4a86-4561-a71e-f5c177f27b9a
+
+The above video explains these scenarios:
+
+```bash
+Scenario 1:
+# If you have log files , you can attach it to the chat 
+
+# Then ask: "Why is my pod crashing?"
+
+Scenario 2:
+# You can ask the AI assistant : List the pods in a namespace
+# The assistant will run the necessary kubectl commands and lists all the pods in your cluster.
+
+Scenario 3:
+# You can ask the AI assistant to troubleshoot a failure directly  : Why <name-of-the-pod> in <namespace> namespace in not running?
+# The assistant will access your cluster , logs and the kubernetes events to troubleshoot and then provides the root cause.
+```
+
 ## Architecture
 
 ```
@@ -53,28 +75,7 @@ npm run dev
 Open http://localhost:5173
 
 
-## Sample Demo
 
-Checkout the video which explains these scenarios:
-
-```bash
-Scenario 1:
-# If you have log files , you can attach it to the chat 
-
-# Then ask: "Why is my pod crashing?"
-
-Scenario 2:
-# You can ask the AI assistant : List the pods in a namespace
-# The assistant will run the necessary kubectl commands and lists all the pods in your cluster.
-
-Scenario 3:
-# You can ask the AI assistant to troubleshoot a failure directly  : Why <name-of-the-pod> in <namespace> namespace in not running?
-# The assistant will access your cluster , logs and the kubernetes events to troubleshoot and then provides the root cause.
-```
-
-
-
-https://github.com/user-attachments/assets/4e09228f-4a86-4561-a71e-f5c177f27b9a
 
 
 
